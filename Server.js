@@ -1,0 +1,91 @@
+const express = require('express');
+const cors = require('cors');
+const mongoose = require('mongoose');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
+
+const app = express();
+
+app.use(cors());
+app.use(express.json());
+app.use('/uploads', express.static('uploads')); // Serve static files from 'uploads' folder
+
+// ✅ MongoDB connection
+mongoose.connect('mongodb+srv://Jonia:Jonia@cluster0.yrmt07y.mongodb.net/krishimithra?retryWrites=true&w=majority&appName=Cluster0', {
+  useNewUrlParser: true,
+  useUnifiedTopology: true
+})
+.then(() => console.log('✅ Connected to MongoDB Atlas'))
+.catch((err) => console.error('❌ MongoDB connection error:', err));
+
+// ✅ Multer configuration
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, 'uploads/');
+  },
+  filename: function (req, file, cb) {
+    cb(null, Date.now() + '-' + file.originalname);
+  }
+});
+const upload = multer({ storage: storage });
+
+// ✅ Mongoose schema
+const detailSchema = new mongoose.Schema({
+  name: String,
+  contact: String,
+  tools: String,
+  place: String
+});
+const Detail = mongoose.model('Detail', detailSchema);
+
+// ✅ Routes
+app.post('/api/add', async (req, res) => {
+  try {
+    const detail = new Detail(req.body);
+    await detail.save();
+    res.json({ message: "Details added successfully!" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/view', async (req, res) => {
+  try {
+    const allDetails = await Detail.find();
+    res.json(allDetails);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete('/api/delete/:id', async (req, res) => {
+  try {
+    await Detail.findByIdAndDelete(req.params.id);
+    res.json({ message: 'Deleted successfully' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ✅ Upload image
+app.post('/api/upload', upload.single('toolImage'), (req, res) => {
+  res.json({ message: 'Image uploaded successfully', filename: req.file.filename });
+});
+
+// ✅ Get list of uploaded images
+app.get('/api/images', (req, res) => {
+  const dir = path.join(__dirname, 'uploads');
+  fs.readdir(dir, (err, files) => {
+    if (err) {
+      return res.status(500).json({ error: 'Failed to load images' });
+    }
+    res.json(files);
+  });
+});
+
+// ✅ Start server (Only once!)
+const PORT = 5000;
+app.listen(PORT, () => {
+  console.log(`🚀 Server running at http://localhost:${PORT}`);
+});
