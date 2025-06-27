@@ -83,6 +83,15 @@ app.get('/api/images', (req, res) => {
     res.json(files);
   });
 });
+//Delete API for Images
+app.delete('/api/image/:filename', (req, res) => {
+  const filePath = path.join(__dirname, 'uploads', req.params.filename);
+  fs.unlink(filePath, (err) => {
+    if (err) return res.status(500).json({ error: 'File delete failed' });
+    res.json({ message: 'Image deleted successfully' });
+  });
+});
+
 
 // ✅ Start server (Only once!)
 const PORT = 5000;
