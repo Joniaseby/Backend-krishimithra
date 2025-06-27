@@ -98,3 +98,31 @@ const PORT = 5000;
 app.listen(PORT, () => {
   console.log(`🚀 Server running at http://localhost:${PORT}`);
 });
+
+// ✅ User schema
+const userSchema = new mongoose.Schema({
+  username: String,
+  password: String
+});
+const User = mongoose.model('User', userSchema);
+
+// ✅ Register user (optional for now)
+app.post('/api/register', async (req, res) => {
+  const { username, password } = req.body;
+  if (!username || !password) return res.status(400).json({ error: 'All fields required' });
+
+  const existing = await User.findOne({ username });
+  if (existing) return res.status(400).json({ error: 'User already exists' });
+
+  const user = new User({ username, password }); // For production, hash password!
+  await user.save();
+  res.json({ message: 'User registered successfully' });
+});
+
+// ✅ Login
+app.post('/api/login', async (req, res) => {
+  const { username, password } = req.body;
+  const user = await User.findOne({ username, password }); // In production, compare hashed passwords
+  if (!user) return res.status(401).json({ error: 'Invalid credentials' });
+  res.json({ message: 'Login successful' });
+});
