@@ -35,14 +35,17 @@ const detailSchema = new mongoose.Schema({
   name: String,
   contact: String,
   tools: String,
-  place: String
+  place: String,
+  image: String
 });
 const Detail = mongoose.model('Detail', detailSchema);
 
 // ✅ Routes
-app.post('/api/add', async (req, res) => {
+app.post('/api/add', upload.single('toolImage'), async (req, res) => {
   try {
-    const detail = new Detail(req.body);
+    const { name, contact, tools, place } = req.body;
+    const image = req.file ? req.file.filename : null;
+    const detail = new Detail({ name, contact, tools, place, image });
     await detail.save();
     res.json({ message: "Details added successfully!" });
   } catch (err) {
