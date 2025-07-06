@@ -119,14 +119,29 @@ app.get('/api/product/:id', async (req, res) => {
   }
 });
 
+
+
 /* ───────────────────────────────────
    Auth Routes
 ─────────────────────────────────── */
 app.post('/api/register', async (req, res) => {
   try {
     const { username, password, name, email, contact, place } = req.body;
-    if (!username || !password) return res.status(400).json({ error: 'Username & password required' });
-    if (await User.findOne({ username })) return res.status(400).json({ error: 'User already exists' });
+    
+    // Validate required fields
+    if (!username || !password || !name || !email || !contact || !place) {
+      return res.status(400).json({ error: 'All fields are required' });
+    }
+    
+    // Check if user already exists
+    if (await User.findOne({ username })) {
+      return res.status(400).json({ error: 'Username already exists' });
+    }
+    
+    // Check if email already exists
+    if (await User.findOne({ email })) {
+      return res.status(400).json({ error: 'Email already registered' });
+    }
 
     const hashed = await bcrypt.hash(password, 10);
     await new User({ username, password: hashed, name, email, contact, place }).save();
@@ -145,7 +160,7 @@ app.post('/api/login', async (req, res) => {
     }
     const token = jwt.sign({ id: user._id }, JWT_SECRET, { expiresIn: '2h' });
     const { name, email, contact, place } = user;
-    res.json({ message: 'Login successful', token, user: { name, email, contact, place } });
+    res.json({ message: 'Login successful', token, user: { username, name, email, contact, place } });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
