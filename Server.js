@@ -8,7 +8,7 @@ const jwt      = require('jsonwebtoken');
 const bcrypt   = require('bcryptjs');
 
 const app        = express();
-const JWT_SECRET = 'CHANGE_THIS_SECRET';         // 👉 move to .env in production
+const JWT_SECRET = 'CHANGE_THIS_SECRET';         // 👉 move to .env in production
 const PORT       = 5000;
 
 /* ───────────────────────────────────
@@ -119,7 +119,19 @@ app.get('/api/product/:id', async (req, res) => {
   }
 });
 
-
+app.delete('/api/product/:id', authMiddleware, async (req, res) => {
+  try {
+    const product = await Product.findById(req.params.id);
+    if (!product) return res.status(404).json({ error: 'Product not found' });
+    if (product.ownerId !== req.userId) {
+      return res.status(403).json({ error: 'You are not authorized to delete this product' });
+    }
+    await Product.findByIdAndDelete(req.params.id);
+    res.json({ message: 'Product deleted successfully' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
 /* ───────────────────────────────────
    Auth Routes
